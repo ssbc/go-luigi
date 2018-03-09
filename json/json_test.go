@@ -1,4 +1,4 @@
-package luigi // import "cryptoscope.co/go/luigi"
+package json // import "cryptoscope.co/go/luigi/json"
 
 import (
 	"bytes"
@@ -7,9 +7,11 @@ import (
 	"io"
 	"reflect"
 	"testing"
+
+  "cryptoscope.co/go/luigi"
 )
 
-func TestJSONSource(t *testing.T) {
+func TestSource(t *testing.T) {
 	type jsonType struct {
 		K       string        `json:"k"`
 		Answer  int           `json:"answer"`
@@ -26,7 +28,7 @@ func TestJSONSource(t *testing.T) {
 
 	test := func(tc testcase) {
 		buf := bytes.NewBuffer([]byte(tc.jsonString))
-		src := NewJSONSource(buf, tc.tipe)
+		src := NewSource(buf, tc.tipe)
 
 		var (
 			v   interface{}
@@ -37,7 +39,7 @@ func TestJSONSource(t *testing.T) {
 		for {
 			v, err = src.Next(context.TODO())
 			if err = tc.errchk(err); err != nil {
-				if IsEOS(err) {
+				if luigi.IsEOS(err) {
 					if i != len(tc.results) {
 						t.Error(err)
 					}
@@ -117,7 +119,7 @@ type writeCloser struct {
 
 func (_ writeCloser) Close() error { return nil }
 
-func TestJSONSink(t *testing.T) {
+func TestSink(t *testing.T) {
 	type jsonType struct {
 		K       string        `json:"k"`
 		Answer  int           `json:"answer"`
@@ -135,7 +137,7 @@ func TestJSONSink(t *testing.T) {
 	test := func(tc testcase) {
 		ctx := context.Background()
 		buf := bytes.NewBuffer([]byte(tc.jsonString))
-		sink := NewJSONSink(writeCloser{buf})
+		sink := NewSink(writeCloser{buf})
 
 		dec := json.NewDecoder(buf)
 
