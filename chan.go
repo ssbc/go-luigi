@@ -44,17 +44,3 @@ func NewPipe() (Source, Sink) {
 
 	return &chanSource{ch}, &chanSink{ch}
 }
-
-type sliceSource []interface{}
-
-func (src *sliceSource) Next(ctx context.Context) (interface{}, error) {
-	if len(*src) == 0 {
-		return nil, EOS{}
-	}
-
-	s := *src
-	v := s[0]
-	*src = s[1:]
-
-	return v, nil
-}
