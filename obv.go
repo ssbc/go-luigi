@@ -19,6 +19,17 @@ type Observable interface {
 	Value() (interface{}, error)
 }
 
+// NewObservable returns a new Observable
+func NewObservable(v interface{}) Observable {
+	bcstSink, bcst := NewBroadcast()
+
+	return &observable{
+		Broadcast: bcst,
+		sink:      bcstSink,
+		v:         v,
+	}
+}
+
 // observable is a concrete type implementing Observable
 type observable struct {
 	sync.Mutex
@@ -43,14 +54,4 @@ func (o *observable) Value() (interface{}, error) {
 	defer o.Unlock()
 
 	return o.v, nil
-}
-
-// NewObservable returns a new Observable
-func NewObservable() Observable {
-	bcstSink, bcst := NewBroadcast()
-
-	return &observable{
-		Broadcast: bcst,
-		sink:      bcstSink,
-	}
 }

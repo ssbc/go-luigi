@@ -12,7 +12,7 @@ func TestObservable(t *testing.T) {
 	}
 
 	test := func(tc testcase) {
-		obv := NewObservable()
+		obv := NewObservable(nil)
 
 		makeSink := func() (Sink, <-chan interface{}) {
 			vChan := make(chan interface{}, 1)
