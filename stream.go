@@ -15,3 +15,25 @@ type Sink interface {
 type Source interface {
 	Next(context.Context) (interface{}, error)
 }
+
+// Pump moves values from a source into a sink.
+//
+// Currently this doesn't work atomically, so if a Sink errors in the
+// Pour call, the value that was read from the source is lost.
+func Pump(ctx context.Context, sink Sink, src Source) error {
+	for {
+		v, err := src.Next(ctx)
+		if IsEOS(err) {
+			return nil
+		} else if err != nil {
+			return err
+		}
+
+		err = sink.Pour(ctx, v)
+		if err != nil {
+			return err
+		}
+	}
+
+	panic("unreachable")
+}
