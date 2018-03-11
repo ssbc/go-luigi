@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-  "cryptoscope.co/go/luigi"
+	"cryptoscope.co/go/luigi"
 )
 
 func TestSource(t *testing.T) {

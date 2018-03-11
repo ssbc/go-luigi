@@ -6,7 +6,7 @@ import (
 	"io"
 	"reflect"
 
-  "cryptoscope.co/go/luigi"
+	"cryptoscope.co/go/luigi"
 )
 
 type source struct {
