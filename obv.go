@@ -55,3 +55,46 @@ func (o *observable) Value() (interface{}, error) {
 
 	return o.v, nil
 }
+
+func (o *observable) Register(sink Sink) func() {
+	o.Lock()
+	defer o.Unlock()
+
+	var (
+		// protects cancel
+		lock sync.Mutex
+
+		// registration cancel from broadcast
+		cancel func()
+	)
+
+	ctx, ctxCancel := context.WithCancel(context.Background())
+
+	// pour current value in the background
+	go func() {
+		err := sink.Pour(ctx, o.v)
+		// TODO at least log this error...or find out what to do with it. maybe
+		// change Broadcast interface to let Register return an error?
+		if err != nil {
+			// TODO maybe also handle the error from Close...or just let it slip
+			// because we can't handle it anyway?
+			sink.Close()
+			return
+		}
+
+		lock.Lock()
+		defer lock.Unlock()
+		cancel = o.Broadcast.Register(sink)
+	}()
+
+	// return a cancel func that cancels both the context and the registration (if set)
+	return func() {
+		ctxCancel()
+
+		lock.Lock()
+		defer lock.Unlock()
+		if cancel != nil {
+			cancel()
+		}
+	}
+}

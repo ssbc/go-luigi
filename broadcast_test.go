@@ -39,7 +39,7 @@ func TestBroadcast(t *testing.T) {
 				i      int
 			)
 
-			return funcSink(func(ctx context.Context, v interface{}, doClose bool) error {
+			return FuncSink(func(ctx context.Context, v interface{}, doClose bool) error {
 				if doClose {
 					if closed {
 						return fmt.Errorf("sink already closed")

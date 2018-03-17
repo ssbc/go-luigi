@@ -17,7 +17,7 @@ func TestObservable(t *testing.T) {
 		makeSink := func() (Sink, <-chan interface{}) {
 			vChan := make(chan interface{}, 1)
 			var closed bool
-			var sink Sink = funcSink(func(ctx context.Context, v interface{}, doClose bool) error {
+			var sink Sink = FuncSink(func(ctx context.Context, v interface{}, doClose bool) error {
 				if closed {
 					return fmt.Errorf("call on closed sink")
 				}

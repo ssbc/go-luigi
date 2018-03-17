@@ -29,6 +29,7 @@ func (bcst *broadcast) Register(sink Sink) func() {
 		bcst.Lock()
 		defer bcst.Unlock()
 		delete(bcst.sinks, &sink)
+		sink.Close()
 	}
 }
 
