@@ -3,6 +3,7 @@ package luigi // import "cryptoscope.co/go/luigi"
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 )
 
@@ -16,13 +17,27 @@ func TestObservable(t *testing.T) {
 
 		makeSink := func() (Sink, <-chan interface{}) {
 			vChan := make(chan interface{}, 1)
-			var closed bool
+			var (
+				lock   sync.Mutex
+				closed bool
+				first  bool = true
+			)
 			var sink Sink = FuncSink(func(ctx context.Context, v interface{}, doClose bool) error {
+				lock.Lock()
+				defer lock.Unlock()
+
+				if first {
+					first = false
+					return nil
+				}
+
 				if closed {
 					return fmt.Errorf("call on closed sink")
 				}
+
 				if doClose {
 					closed = true
+					close(vChan)
 					return nil
 				}
 

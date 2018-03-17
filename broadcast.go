@@ -36,19 +36,14 @@ func (bcst *broadcast) Register(sink Sink) func() {
 type broadcastSink broadcast
 
 func (bcst *broadcastSink) Pour(ctx context.Context, v interface{}) error {
-	var wg sync.WaitGroup
-
-	bcst.Lock()
-	defer bcst.Unlock()
-
-	n := len(bcst.sinks)
-	wg.Add(n)
-
 	errCh := make(chan error)
 	errOut := make(chan error, 1)
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	bcst.Lock()
+	defer bcst.Unlock()
 
 	go func() {
 		defer close(errOut)
@@ -63,20 +58,36 @@ func (bcst *broadcastSink) Pour(ctx context.Context, v interface{}) error {
 		}
 	}()
 
-	for sinkptr := range bcst.sinks {
-		go func(sink Sink) {
-			defer wg.Done()
+	func() {
+		sinks := make([]Sink, 0, len(bcst.sinks))
 
-			err := sink.Pour(ctx, v)
-			if err != nil {
-				errCh <- err
-				return
-			}
-		}(*sinkptr)
-	}
+		for sink := range bcst.sinks {
+			sinks = append(sinks, *sink)
+		}
 
-	wg.Wait()
-	close(errCh)
+		// release lock while broadcasting
+		// they might want to take it, e.g. to call cancel()
+		bcst.Unlock()
+		defer bcst.Lock()
+
+		var wg sync.WaitGroup
+
+		wg.Add(len(sinks))
+		for _, sink_ := range sinks {
+			go func(sink Sink) {
+				defer wg.Done()
+
+				err := sink.Pour(ctx, v)
+				if err != nil {
+					errCh <- err
+					return
+				}
+			}(sink_)
+		}
+
+		wg.Wait()
+		close(errCh)
+	}()
 
 	return <-errOut
 }
