@@ -1,11 +1,20 @@
 package luigi // import "cryptoscope.co/go/luigi"
 
-import "context"
+import (
+	"context"
+
+	"github.com/pkg/errors"
+)
 
 type EOS struct{}
 
 func (_ EOS) Error() string { return "end of stream" }
-func IsEOS(err error) bool  { _, ok := err.(EOS); return ok }
+func IsEOS(err error) bool {
+	err = errors.Cause(err)
+
+	_, ok := err.(EOS)
+	return ok
+}
 
 type Sink interface {
 	Pour(context.Context, interface{}) error
