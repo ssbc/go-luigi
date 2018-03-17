@@ -57,8 +57,7 @@ func (o *observable) Value() (interface{}, error) {
 }
 
 func (o *observable) Register(sink Sink) func() {
-	o.Lock()
-	defer o.Unlock()
+	o.Lock() // is released when goroutine finishes
 
 	var (
 		// protects cancel
@@ -69,10 +68,11 @@ func (o *observable) Register(sink Sink) func() {
 	)
 
 	ctx, ctxCancel := context.WithCancel(context.Background())
-
 	// pour current value in the background
-	go func() {
-		err := sink.Pour(ctx, o.v)
+	go func(v interface{}) {
+		defer o.Unlock()
+
+		err := sink.Pour(ctx, v)
 		// TODO at least log this error...or find out what to do with it. maybe
 		// change Broadcast interface to let Register return an error?
 		if err != nil {
@@ -82,10 +82,8 @@ func (o *observable) Register(sink Sink) func() {
 			return
 		}
 
-		lock.Lock()
-		defer lock.Unlock()
 		cancel = o.Broadcast.Register(sink)
-	}()
+	}(o.v)
 
 	// return a cancel func that cancels both the context and the registration (if set)
 	return func() {
