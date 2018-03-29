@@ -14,7 +14,7 @@ func TestChanSource(t *testing.T) {
 
 	test := func(tc testcase) {
 		ch := make(chan interface{})
-		cs := &chanSource{ch}
+		cs := &chanSource{ch, false}
 
 		for _, v := range tc.values {
 			go func(v_ interface{}) {
@@ -69,7 +69,7 @@ func TestChanSink(t *testing.T) {
 	test := func(tc testcase) {
 		ch := make(chan interface{})
 		echoCh := make(chan interface{})
-		cs := &chanSink{ch}
+		cs := &chanSink{ch, false}
 
 		for _, v := range tc.values {
 			go func() {
