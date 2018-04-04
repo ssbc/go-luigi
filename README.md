@@ -1,5 +1,5 @@
 # luigi
 
-A plumbilng architecture to handles streams of values.
+A plumbing architecture to handle streams of values.
 
 The proof-of-concept was called mario.
