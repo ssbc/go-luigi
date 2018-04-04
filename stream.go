@@ -21,6 +21,10 @@ type Sink interface {
 	Close() error
 }
 
+type ErrorCloser interface {
+	CloseWithError(error) error
+}
+
 type Source interface {
 	Next(context.Context) (interface{}, error)
 }

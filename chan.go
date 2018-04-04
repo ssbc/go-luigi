@@ -2,6 +2,7 @@ package luigi // import "cryptoscope.co/go/luigi"
 
 import (
 	"context"
+	"sync"
 
 	"github.com/pkg/errors"
 )
@@ -9,6 +10,7 @@ import (
 type chanSource struct {
 	ch          <-chan interface{}
 	nonBlocking bool
+	closeErr    *error
 }
 
 func (src *chanSource) Next(ctx context.Context) (v interface{}, err error) {
@@ -18,7 +20,11 @@ func (src *chanSource) Next(ctx context.Context) (v interface{}, err error) {
 		select {
 		case v, ok = <-src.ch:
 			if !ok {
-				err = EOS{}
+				if *(src.closeErr) != nil {
+					err = *(src.closeErr)
+				} else {
+					err = EOS{}
+				}
 			}
 		default:
 			err = errors.New("channel not ready for reading")
@@ -27,7 +33,11 @@ func (src *chanSource) Next(ctx context.Context) (v interface{}, err error) {
 		select {
 		case v, ok = <-src.ch:
 			if !ok {
-				err = EOS{}
+				if *(src.closeErr) != nil {
+					err = *(src.closeErr)
+				} else {
+					err = EOS{}
+				}
 			}
 		case <-ctx.Done():
 			err = ctx.Err()
@@ -40,6 +50,8 @@ func (src *chanSource) Next(ctx context.Context) (v interface{}, err error) {
 type chanSink struct {
 	ch          chan<- interface{}
 	nonBlocking bool
+	closeErr    *error
+	closeOnce   sync.Once
 }
 
 func (sink *chanSink) Pour(ctx context.Context, v interface{}) error {
@@ -65,7 +77,17 @@ func (sink *chanSink) Pour(ctx context.Context, v interface{}) error {
 }
 
 func (sink *chanSink) Close() error {
-	close(sink.ch)
+	sink.closeOnce.Do(func() {
+		close(sink.ch)
+	})
+	return nil
+}
+
+func (sink *chanSink) CloseWithError(err error) error {
+	sink.closeOnce.Do(func() {
+		*(sink.closeErr) = err
+		close(sink.ch)
+	})
 	return nil
 }
 
@@ -103,11 +125,15 @@ func NewPipe(opts ...PipeOpt) (Source, Sink) {
 
 	ch := make(chan interface{}, pOpts.bufferSize)
 
+	var closeErr error
+
 	return &chanSource{
 			ch:          ch,
+			closeErr:    &closeErr,
 			nonBlocking: pOpts.nonBlocking,
 		}, &chanSink{
 			ch:          ch,
+			closeErr:    &closeErr,
 			nonBlocking: pOpts.nonBlocking,
 		}
 }
