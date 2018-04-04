@@ -1,68 +1,67 @@
 package luigi // import "cryptoscope.co/go/luigi"
 
-
 import (
-  "context"
+	"context"
 
-  "github.com/pkg/errors"
+	"github.com/pkg/errors"
 )
 
 type chanSource struct {
-	ch <-chan interface{}
-  nonBlocking bool
+	ch          <-chan interface{}
+	nonBlocking bool
 }
 
 func (src *chanSource) Next(ctx context.Context) (v interface{}, err error) {
 	var ok bool
 
-  if src.nonBlocking {
-    select {
-    case v, ok = <-src.ch:
-      if !ok {
-        err = EOS{}
-      }
-    default:
-      err = errors.New("channel not ready for reading")
-    }
-  } else {
-    select {
-    case v, ok = <-src.ch:
-      if !ok {
-        err = EOS{}
-      }
-    case <-ctx.Done():
-      err = ctx.Err()
-    }
-  }
+	if src.nonBlocking {
+		select {
+		case v, ok = <-src.ch:
+			if !ok {
+				err = EOS{}
+			}
+		default:
+			err = errors.New("channel not ready for reading")
+		}
+	} else {
+		select {
+		case v, ok = <-src.ch:
+			if !ok {
+				err = EOS{}
+			}
+		case <-ctx.Done():
+			err = ctx.Err()
+		}
+	}
 
 	return v, err
 }
 
 type chanSink struct {
-	ch chan<- interface{}
-  nonBlocking bool
+	ch          chan<- interface{}
+	nonBlocking bool
 }
 
 func (sink *chanSink) Pour(ctx context.Context, v interface{}) error {
-  var err error
+	var err error
 
-  if sink.nonBlocking {
-    select {
-    case sink.ch <- v:
-      return nil
-    default:
-      err = errors.New("channel not ready for writing")
-    }
-  } else {
-    select {
-    case sink.ch <- v:
-      return nil
-    case <-ctx.Done():
-      return ctx.Err()
-    }
-  }
+	if sink.nonBlocking {
+		select {
+		case sink.ch <- v:
+			return nil
+		default:
+			err = errors.New("channel not ready for writing")
+		}
+	} else {
+		select {
+		case sink.ch <- v:
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
 
-  return err
+	return err
 }
 
 func (sink *chanSink) Close() error {
@@ -71,45 +70,44 @@ func (sink *chanSink) Close() error {
 }
 
 type pipeOpts struct {
-  bufferSize int
-  nonBlocking bool
+	bufferSize  int
+	nonBlocking bool
 }
 
 type PipeOpt func(*pipeOpts) error
 
 func WithBuffer(bufSize int) PipeOpt {
-  return PipeOpt(func(opts *pipeOpts) error {
-    opts.bufferSize = bufSize
-    return nil
-  })
+	return PipeOpt(func(opts *pipeOpts) error {
+		opts.bufferSize = bufSize
+		return nil
+	})
 }
 
 func NonBlocking() PipeOpt {
-  return PipeOpt(func(opts *pipeOpts) error {
-    opts.nonBlocking = true
-    return nil
-  })
+	return PipeOpt(func(opts *pipeOpts) error {
+		opts.nonBlocking = true
+		return nil
+	})
 }
 
 func NewPipe(opts ...PipeOpt) (Source, Sink) {
-  var pOpts pipeOpts
+	var pOpts pipeOpts
 
-  for _, opt := range opts {
-    err := opt(&pOpts)
-    if err != nil {
-      // TODO what to do?
-      panic(err)
-    }
-  }
+	for _, opt := range opts {
+		err := opt(&pOpts)
+		if err != nil {
+			// TODO what to do?
+			panic(err)
+		}
+	}
 
 	ch := make(chan interface{}, pOpts.bufferSize)
 
 	return &chanSource{
-    ch: ch,
-    nonBlocking: pOpts.nonBlocking,
-  }, &chanSink{
-    ch: ch,
-    nonBlocking: pOpts.nonBlocking,
-  }
+			ch:          ch,
+			nonBlocking: pOpts.nonBlocking,
+		}, &chanSink{
+			ch:          ch,
+			nonBlocking: pOpts.nonBlocking,
+		}
 }
-
