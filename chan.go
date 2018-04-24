@@ -77,15 +77,12 @@ func (sink *chanSink) Pour(ctx context.Context, v interface{}) error {
 }
 
 func (sink *chanSink) Close() error {
-	sink.closeOnce.Do(func() {
-		close(sink.ch)
-	})
-	return nil
+	return sink.CloseWithError(EOS{})
 }
 
 func (sink *chanSink) CloseWithError(err error) error {
 	sink.closeOnce.Do(func() {
-		*(sink.closeErr) = err
+		*sink.closeErr = err
 		close(sink.ch)
 	})
 	return nil
