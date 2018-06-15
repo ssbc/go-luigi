@@ -1,4 +1,4 @@
-package luigi // import "cryptoscope.co/go/luigi"
+package luigi // import "go.cryptoscope.co/luigi"
 
 import (
 	"context"

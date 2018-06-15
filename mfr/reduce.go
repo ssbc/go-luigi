@@ -1,11 +1,11 @@
-package mfr // import "cryptoscope.co/go/luigi/mfr"
+package mfr // import "go.cryptoscope.co/luigi/mfr"
 
 import (
 	"context"
 	"errors"
 	"sync"
 
-	"cryptoscope.co/go/luigi"
+	"go.cryptoscope.co/luigi"
 )
 
 // ReduceFunc is a function that reduces a value v and an accumulator to the next accumulator value.

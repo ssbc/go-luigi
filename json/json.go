@@ -1,4 +1,4 @@
-package json // import "cryptoscope.co/go/luigi/json"
+package json // import "go.cryptoscope.co/luigi/json"
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"io"
 	"reflect"
 
-	"cryptoscope.co/go/luigi"
+	"go.cryptoscope.co/luigi"
 )
 
 type source struct {

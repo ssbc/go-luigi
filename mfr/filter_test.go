@@ -1,11 +1,11 @@
-package mfr // import "cryptoscope.co/go/luigi/mfr"
+package mfr // import "go.cryptoscope.co/luigi/mfr"
 
 import (
 	"context"
 	"fmt"
 	"testing"
 
-	"cryptoscope.co/go/luigi"
+	"go.cryptoscope.co/luigi"
 )
 
 func TestFilterSink(t *testing.T) {

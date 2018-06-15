@@ -1,4 +1,4 @@
-package json // import "cryptoscope.co/go/luigi/json"
+package json // import "go.cryptoscope.co/luigi/json"
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"cryptoscope.co/go/luigi"
+	"go.cryptoscope.co/luigi"
 )
 
 func TestSource(t *testing.T) {

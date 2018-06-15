@@ -1,9 +1,9 @@
-package mfr // import "cryptoscope.co/go/luigi/mfr"
+package mfr // import "go.cryptoscope.co/luigi/mfr"
 
 import (
 	"context"
 
-	"cryptoscope.co/go/luigi"
+	"go.cryptoscope.co/luigi"
 )
 
 type FilterFunc func(context.Context, interface{}) (bool, error)
