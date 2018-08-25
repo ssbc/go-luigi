@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"testing"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 type expectedEOSErr struct{ v interface{} }
@@ -82,8 +84,17 @@ func TestBroadcast(t *testing.T) {
 				}
 			} else if len(tc.tx) > len(tc.rx) {
 				if j >= len(tc.rx) {
-					if !IsExpectedEOS(err) {
-						t.Errorf("expected an expectedEOS error, but got %v", err)
+					merr, ok := err.(*multierror.Error)
+					if ok {
+						for _, err := range merr.Errors {
+							if !IsExpectedEOS(err) {
+								t.Errorf("expected an expectedEOS error, but got %v", err)
+							}
+						}
+					} else {
+						if !IsExpectedEOS(err) {
+							t.Errorf("expected an expectedEOS error, but got %v", err)
+						}
 					}
 				} else {
 					if err != nil {
