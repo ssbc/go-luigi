@@ -56,7 +56,7 @@ func (bcst *broadcastSink) Pour(ctx context.Context, v interface{}) error {
 	defer bcst.Lock()
 
 	var (
-		wg sync.WaitGroup
+		wg   sync.WaitGroup
 		merr *multierror.Error
 	)
 
