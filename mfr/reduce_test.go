@@ -44,12 +44,12 @@ func TestReduce(t_ *testing.T) {
 			})
 
 			var iCheck int
-			var check luigi.FuncSink = func(ctx context.Context, v interface{}, doClose bool) error {
+			var check luigi.FuncSink = func(ctx context.Context, v interface{}, err error) error {
 				defer func() { iCheck++ }()
-				if doClose && iCheck < len(tc.results) {
+				if err != nil && iCheck < len(tc.results) {
 					return fmt.Errorf("received close, but there are values left (i:%v, v:%v, len(results):%v",
 						iCheck, v, len(tc.results))
-				} else if doClose {
+				} else if err != nil {
 					return nil
 				} else if iCheck >= len(tc.results) {
 					return fmt.Errorf("received more values than expected (i:%v, v:%v, len(results):%v",

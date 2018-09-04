@@ -19,7 +19,7 @@ func TestFilterSink(t *testing.T) {
 			var (
 				iCheck int
 				closed bool
-				check  luigi.FuncSink = func(ctx context.Context, v interface{}, doClose bool) error {
+				check  luigi.FuncSink = func(ctx context.Context, v interface{}, err error) error {
 					defer func() { iCheck++ }()
 					if closed && iCheck < len(tc.out) {
 						//return fmt.Errorf("received close, but there are values left (i:%v, v:%v, len(out):%v",
@@ -27,7 +27,7 @@ func TestFilterSink(t *testing.T) {
 
 						// incoming values after close, ignore so we can test this
 						return nil
-					} else if doClose {
+					} else if err != nil {
 						closed = true
 						return nil
 					} else if iCheck >= len(tc.out) {

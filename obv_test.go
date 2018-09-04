@@ -22,7 +22,7 @@ func TestObservable(t *testing.T) {
 				closed bool
 				first  bool = true
 			)
-			var sink Sink = FuncSink(func(ctx context.Context, v interface{}, doClose bool) error {
+			var sink Sink = FuncSink(func(ctx context.Context, v interface{}, err error) error {
 				lock.Lock()
 				defer lock.Unlock()
 
@@ -35,7 +35,11 @@ func TestObservable(t *testing.T) {
 					return fmt.Errorf("call on closed sink")
 				}
 
-				if doClose {
+				if err != nil {
+					if err != (EOS{}) {
+						t.Log("closed with non-EOS error:", err)
+					}
+					
 					closed = true
 					close(vChan)
 					return nil

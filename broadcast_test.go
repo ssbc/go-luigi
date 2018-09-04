@@ -41,8 +41,12 @@ func TestBroadcast(t *testing.T) {
 				i      int
 			)
 
-			return FuncSink(func(ctx context.Context, v interface{}, doClose bool) error {
-				if doClose {
+			return FuncSink(func(ctx context.Context, v interface{}, err error) error {
+				if err != nil {
+					if err != (EOS{}) {
+						t.Log("closed with non-EOF error:", err)
+					}
+					
 					if closed {
 						return fmt.Errorf("sink already closed")
 					}
