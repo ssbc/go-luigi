@@ -46,7 +46,7 @@ func TestBroadcast(t *testing.T) {
 					if err != (EOS{}) {
 						t.Log("closed with non-EOF error:", err)
 					}
-					
+
 					if closed {
 						return fmt.Errorf("sink already closed")
 					}

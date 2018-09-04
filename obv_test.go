@@ -39,7 +39,7 @@ func TestObservable(t *testing.T) {
 					if err != (EOS{}) {
 						t.Log("closed with non-EOS error:", err)
 					}
-					
+
 					closed = true
 					close(vChan)
 					return nil
