@@ -41,19 +41,19 @@ func (bcst *broadcastSink) Pour(ctx context.Context, v interface{}) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	bcst.Lock()
-	defer bcst.Unlock()
+	var sinks []Sink
 
-	sinks := make([]Sink, 0, len(bcst.sinks))
+	// closure to contain defer
+	func() {
+		bcst.Lock()
+		defer bcst.Unlock()
 
-	for sink := range bcst.sinks {
-		sinks = append(sinks, *sink)
-	}
+		sinks = make([]Sink, 0, len(bcst.sinks))
 
-	// release lock while broadcasting
-	// they might want to take it, e.g. to call cancel()
-	bcst.Unlock()
-	defer bcst.Lock()
+		for sink := range bcst.sinks {
+			sinks = append(sinks, *sink)
+		}
+	}()
 
 	var (
 		wg   sync.WaitGroup
@@ -78,4 +78,39 @@ func (bcst *broadcastSink) Pour(ctx context.Context, v interface{}) error {
 	return merr.ErrorOrNil()
 }
 
-func (bcst *broadcastSink) Close() error { return nil }
+func (bcst *broadcastSink) Close() error {
+	var sinks []Sink
+
+	// closure to contain defer
+	func() {
+		bcst.Lock()
+		defer bcst.Unlock()
+
+		sinks = make([]Sink, 0, len(bcst.sinks))
+
+		for sink := range bcst.sinks {
+			sinks = append(sinks, *sink)
+		}
+	}()
+
+	var (
+		wg   sync.WaitGroup
+		merr *multierror.Error
+	)
+
+	wg.Add(len(sinks))
+	for _, sink_ := range sinks {
+		go func(sink Sink) {
+			defer wg.Done()
+
+			err := sink.Close()
+			if err != nil {
+				merr = multierror.Append(merr, err)
+				return
+			}
+		}(sink_)
+	}
+	wg.Wait()
+
+	return merr.ErrorOrNil()
+}
