@@ -48,6 +48,7 @@ func (src *chanSource) Next(ctx context.Context) (v interface{}, err error) {
 }
 
 type chanSink struct {
+	cl          sync.Mutex
 	ch          chan<- interface{}
 	nonBlocking bool
 	closeErr    *error
@@ -65,6 +66,8 @@ func (sink *chanSink) Pour(ctx context.Context, v interface{}) error {
 			err = errors.New("channel not ready for writing")
 		}
 	} else {
+		sink.cl.Lock()
+		defer sink.cl.Unlock()
 		select {
 		case sink.ch <- v:
 			return nil
@@ -82,6 +85,8 @@ func (sink *chanSink) Close() error {
 
 func (sink *chanSink) CloseWithError(err error) error {
 	sink.closeOnce.Do(func() {
+		sink.cl.Lock()
+		defer sink.cl.Unlock()
 		*sink.closeErr = err
 		close(sink.ch)
 	})
