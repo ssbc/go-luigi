@@ -58,6 +58,12 @@ type chanSink struct {
 func (sink *chanSink) Pour(ctx context.Context, v interface{}) error {
 	var err error
 
+	sink.cl.Lock()
+	defer sink.cl.Unlock()
+	if err := *sink.closeErr; err != nil {
+		return err
+	}
+
 	if sink.nonBlocking {
 		select {
 		case sink.ch <- v:
@@ -66,8 +72,6 @@ func (sink *chanSink) Pour(ctx context.Context, v interface{}) error {
 			err = errors.New("channel not ready for writing")
 		}
 	} else {
-		sink.cl.Lock()
-		defer sink.cl.Unlock()
 		select {
 		case sink.ch <- v:
 			return nil
