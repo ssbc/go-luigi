@@ -41,23 +41,18 @@ func (bcst *broadcastSink) Pour(ctx context.Context, v interface{}) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	var sinks []Sink
+	bcst.Lock()
+	sinks := make([]Sink, 0, len(bcst.sinks))
 
-	// closure to contain defer
-	func() {
-		bcst.Lock()
-		defer bcst.Unlock()
-
-		sinks = make([]Sink, 0, len(bcst.sinks))
-
-		for sink := range bcst.sinks {
-			sinks = append(sinks, *sink)
-		}
-	}()
+	for sink := range bcst.sinks {
+		sinks = append(sinks, *sink)
+	}
+	bcst.Unlock()
 
 	var (
-		wg   sync.WaitGroup
-		merr *multierror.Error
+		wg    sync.WaitGroup
+		errCh = make(chan error, len(sinks))
+		merr  *multierror.Error
 	)
 
 	wg.Add(len(sinks))
@@ -67,13 +62,17 @@ func (bcst *broadcastSink) Pour(ctx context.Context, v interface{}) error {
 
 			err := sink.Pour(ctx, v)
 			if err != nil {
-				merr = multierror.Append(merr, err)
+				errCh <- err
 				return
 			}
 		}(sink_)
 	}
-
 	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
+		merr = multierror.Append(merr, err)
+	}
 
 	return merr.ErrorOrNil()
 }
@@ -81,17 +80,14 @@ func (bcst *broadcastSink) Pour(ctx context.Context, v interface{}) error {
 func (bcst *broadcastSink) Close() error {
 	var sinks []Sink
 
-	// closure to contain defer
-	func() {
-		bcst.Lock()
-		defer bcst.Unlock()
+	bcst.Lock()
+	defer bcst.Unlock()
 
-		sinks = make([]Sink, 0, len(bcst.sinks))
+	sinks = make([]Sink, 0, len(bcst.sinks))
 
-		for sink := range bcst.sinks {
-			sinks = append(sinks, *sink)
-		}
-	}()
+	for sink := range bcst.sinks {
+		sinks = append(sinks, *sink)
+	}
 
 	var (
 		wg   sync.WaitGroup
