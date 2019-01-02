@@ -2,8 +2,11 @@ package luigi // import "go.cryptoscope.co/luigi"
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 func TestChanSource(t *testing.T) {
@@ -15,7 +18,13 @@ func TestChanSource(t *testing.T) {
 	test := func(tc testcase) {
 		ch := make(chan interface{})
 		var err error
-		cs := &chanSource{ch: ch, nonBlocking: false, closeErr: &err}
+		var lock sync.Mutex
+		cs := &chanSource{
+			ch:          ch,
+			nonBlocking: false,
+			closeErr:    &err,
+			closeLock:   &lock,
+		}
 
 		for _, v := range tc.values {
 			go func(v_ interface{}) {
@@ -41,11 +50,11 @@ func TestChanSource(t *testing.T) {
 			}
 		} else {
 			ctx, cancel := context.WithTimeout(
-				context.Background(), 5*time.Millisecond)
+				context.Background(), 5*time.Second)
 			defer cancel()
 
 			_, err := cs.Next(ctx)
-			if err != context.DeadlineExceeded {
+			if errors.Cause(err) != context.DeadlineExceeded {
 				t.Errorf("expected deadline exceeded error, got %v", err)
 			}
 		}
@@ -71,7 +80,8 @@ func TestChanSink(t *testing.T) {
 		ch := make(chan interface{})
 		echoCh := make(chan interface{})
 		var err error
-		cs := &chanSink{ch: ch, nonBlocking: false, closeErr: &err}
+		var lock sync.Mutex
+		cs := &chanSink{ch: ch, nonBlocking: false, closeErr: &err, closeLock: &lock}
 
 		for _, v := range tc.values {
 			go func() {
@@ -162,11 +172,11 @@ func TestPipe(t *testing.T) {
 			}
 		} else {
 			ctx, cancel := context.WithTimeout(
-				context.Background(), 5*time.Millisecond)
+				context.Background(), 5*time.Second)
 			defer cancel()
 
 			_, err := src.Next(ctx)
-			if err != context.DeadlineExceeded {
+			if errors.Cause(err) != context.DeadlineExceeded {
 				t.Errorf("expected deadline exceeded error, got %v", err)
 			}
 		}

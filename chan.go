@@ -72,18 +72,17 @@ type chanSource struct {
 func (src *chanSource) Next(ctx context.Context) (v interface{}, err error) {
 	var ok bool
 
-	src.closeLock.Lock()
-	defer src.closeLock.Unlock()
-
 	if src.nonBlocking {
 		select {
 		case v, ok = <-src.ch:
 			if !ok {
+				src.closeLock.Lock()
 				if *(src.closeErr) != nil {
 					err = *(src.closeErr)
 				} else {
 					err = EOS{}
 				}
+				src.closeLock.Unlock()
 			}
 		default:
 			err = errors.New("channel not ready for reading")
@@ -92,14 +91,18 @@ func (src *chanSource) Next(ctx context.Context) (v interface{}, err error) {
 		select {
 		case v, ok = <-src.ch:
 			if !ok {
+				src.closeLock.Lock()
 				if *(src.closeErr) != nil {
 					err = *(src.closeErr)
 				} else {
 					err = EOS{}
 				}
+				src.closeLock.Unlock()
 			}
 		case <-ctx.Done():
+			src.closeLock.Lock()
 			err = errors.Wrapf(ctx.Err(), "luigi next: closed: %v", *(src.closeErr))
+			src.closeLock.Unlock()
 		}
 	}
 
