@@ -7,8 +7,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+type pipeOpts struct {
+	bufferSize  int
+	nonBlocking bool
+}
+
+// PipeOpt configures NewPipes behavior
 type PipeOpt func(*pipeOpts) error
 
+// WithBuffer sets the buffer size of the internal channel
 func WithBuffer(bufSize int) PipeOpt {
 	return PipeOpt(func(opts *pipeOpts) error {
 		opts.bufferSize = bufSize
@@ -16,6 +23,7 @@ func WithBuffer(bufSize int) PipeOpt {
 	})
 }
 
+// NonBlocking changes the behavior to assume a non-blocking backing medium
 func NonBlocking() PipeOpt {
 	return PipeOpt(func(opts *pipeOpts) error {
 		opts.nonBlocking = true
@@ -23,34 +31,49 @@ func NonBlocking() PipeOpt {
 	})
 }
 
+// NewPipe returns both ends of a tube
 func NewPipe(opts ...PipeOpt) (Source, Sink) {
 	var pOpts pipeOpts
 
-	for _, opt := range opts {
+	for i, opt := range opts {
 		err := opt(&pOpts)
 		if err != nil {
 			// TODO what to do?
-			panic(err)
+			// the current options don't trigger this anyway
+			panic(errors.Wrapf(err, "luigi: invalid pipe option %d", i))
 		}
 	}
 
 	ch := make(chan interface{}, pOpts.bufferSize)
 
+	var closeLock sync.Mutex
 	var closeErr error
 
 	return &chanSource{
 			ch:          ch,
+			closeLock:   &closeLock,
 			closeErr:    &closeErr,
 			nonBlocking: pOpts.nonBlocking,
 		}, &chanSink{
 			ch:          ch,
+			closeLock:   &closeLock,
 			closeErr:    &closeErr,
 			nonBlocking: pOpts.nonBlocking,
 		}
 }
 
+type chanSource struct {
+	ch          <-chan interface{}
+	nonBlocking bool
+	closeLock   *sync.Mutex
+	closeErr    *error
+}
+
 func (src *chanSource) Next(ctx context.Context) (v interface{}, err error) {
 	var ok bool
+
+	src.closeLock.Lock()
+	defer src.closeLock.Unlock()
 
 	if src.nonBlocking {
 		select {
@@ -83,14 +106,22 @@ func (src *chanSource) Next(ctx context.Context) (v interface{}, err error) {
 	return v, err
 }
 
-type chanSource struct {
-	ch          <-chan interface{}
+type chanSink struct {
+	ch          chan<- interface{}
 	nonBlocking bool
+	closeLock   *sync.Mutex
 	closeErr    *error
+	closeOnce   sync.Once
 }
 
 func (sink *chanSink) Pour(ctx context.Context, v interface{}) error {
 	var err error
+
+	sink.closeLock.Lock()
+	defer sink.closeLock.Unlock()
+	if err := *sink.closeErr; err != nil {
+		return err
+	}
 
 	if sink.nonBlocking {
 		select {
@@ -117,20 +148,10 @@ func (sink *chanSink) Close() error {
 
 func (sink *chanSink) CloseWithError(err error) error {
 	sink.closeOnce.Do(func() {
+		sink.closeLock.Lock()
+		defer sink.closeLock.Unlock()
 		*sink.closeErr = err
 		close(sink.ch)
 	})
 	return nil
-}
-
-type chanSink struct {
-	ch          chan<- interface{}
-	nonBlocking bool
-	closeErr    *error
-	closeOnce   sync.Once
-}
-
-type pipeOpts struct {
-	bufferSize  int
-	nonBlocking bool
 }
