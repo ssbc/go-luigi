@@ -76,7 +76,7 @@ func (src *chanSource) Next(ctx context.Context) (v interface{}, err error) {
 				}
 			}
 		case <-ctx.Done():
-			err = ctx.Err()
+			err = errors.Wrapf(ctx.Err(), "luigi next: closed: %v", *(src.closeErr))
 		}
 	}
 
@@ -104,7 +104,7 @@ func (sink *chanSink) Pour(ctx context.Context, v interface{}) error {
 		case sink.ch <- v:
 			return nil
 		case <-ctx.Done():
-			return ctx.Err()
+			return errors.Wrapf(ctx.Err(), "luigi pour: closed: %v", *(sink.closeErr))
 		}
 	}
 
