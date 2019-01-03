@@ -76,13 +76,11 @@ func (src *chanSource) Next(ctx context.Context) (v interface{}, err error) {
 		select {
 		case v, ok = <-src.ch:
 			if !ok {
-				src.closeLock.Lock()
 				if *(src.closeErr) != nil {
 					err = *(src.closeErr)
 				} else {
 					err = EOS{}
 				}
-				src.closeLock.Unlock()
 			}
 		default:
 			err = errors.New("channel not ready for reading")
@@ -91,18 +89,19 @@ func (src *chanSource) Next(ctx context.Context) (v interface{}, err error) {
 		select {
 		case v, ok = <-src.ch:
 			if !ok {
-				src.closeLock.Lock()
 				if *(src.closeErr) != nil {
 					err = *(src.closeErr)
 				} else {
 					err = EOS{}
 				}
-				src.closeLock.Unlock()
 			}
 		case <-ctx.Done():
-			src.closeLock.Lock()
-			err = errors.Wrapf(ctx.Err(), "luigi next: closed: %v", *(src.closeErr))
-			src.closeLock.Unlock()
+			err = errors.Wrap(ctx.Err(), "luigi next done")
+			/*
+				src.closeLock.Lock()
+				err = errors.Wrapf(ctx.Err(), "luigi next done (closed: %v)", *(src.closeErr))
+				src.closeLock.Unlock()
+			*/
 		}
 	}
 
@@ -138,7 +137,7 @@ func (sink *chanSink) Pour(ctx context.Context, v interface{}) error {
 		case sink.ch <- v:
 			return nil
 		case <-ctx.Done():
-			return errors.Wrapf(ctx.Err(), "luigi pour: closed: %v", *(sink.closeErr))
+			return errors.Wrapf(ctx.Err(), "luigi pour done (closed: %v)", *(sink.closeErr))
 		}
 	}
 
