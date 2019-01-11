@@ -10,10 +10,10 @@ import (
 )
 
 func TestBufferedPipe(t *testing.T) {
-	r := require.New(t)
 
 	mkTest := func(bufSize int) func(*testing.T) {
 		return func(t *testing.T) {
+			r := require.New(t)
 			src, sink := NewPipe(WithBuffer(bufSize))
 
 			ctx := context.Background()

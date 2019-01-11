@@ -47,13 +47,16 @@ func TestCloseWhilePour(t *testing.T) {
 			if v != nil {
 				nextErr <- errors.Errorf("expected nil value but got %v", v)
 			}
-			nextErr <- errors.Wrap(err, "error from next")
+			if !IsEOS(err) {
+				nextErr <- errors.Wrap(err, "error from next")
+			}
 			close(nextErr)
 		}()
 	}()
 
 	err := sink.Pour(ctx, "test msg")
-	r.Equal(EOS{}, err, "should return end of stream")
+	// TODO use exported error variables
+	r.EqualError(err, "pour to closed sink", "should return end of stream")
 
 	r.NoError(<-closeErr)
 

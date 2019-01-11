@@ -2,7 +2,6 @@ package luigi // import "go.cryptoscope.co/luigi"
 
 import (
 	"context"
-	"sync"
 	"testing"
 	"time"
 
@@ -17,13 +16,13 @@ func TestChanSource(t *testing.T) {
 
 	test := func(tc testcase) {
 		ch := make(chan interface{})
+		closeCh := make(chan struct{})
 		var err error
-		var lock sync.Mutex
 		cs := &chanSource{
 			ch:          ch,
 			nonBlocking: false,
 			closeErr:    &err,
-			closeLock:   &lock,
+			closeCh:     closeCh,
 		}
 
 		for _, v := range tc.values {
@@ -43,7 +42,7 @@ func TestChanSource(t *testing.T) {
 		}
 
 		if tc.doClose {
-			close(ch)
+			close(closeCh)
 			_, err := cs.Next(context.TODO())
 			if !IsEOS(err) {
 				t.Errorf("expected end-of-stream error but got %s", err)
@@ -77,17 +76,12 @@ func TestChanSink(t *testing.T) {
 	}
 
 	test := func(tc testcase) {
-		ch := make(chan interface{})
-		echoCh := make(chan interface{})
+		ch := make(chan interface{}, 1)
 		var err error
-		var lock sync.Mutex
-		cs := &chanSink{ch: ch, nonBlocking: false, closeErr: &err, closeLock: &lock}
+		var closeCh = make(chan struct{})
+		cs := &chanSink{ch: ch, nonBlocking: false, closeErr: &err, closeCh: closeCh}
 
 		for _, v := range tc.values {
-			go func() {
-				echoCh <- (<-ch)
-			}()
-
 			err := cs.Pour(context.TODO(), v)
 
 			if err != nil {
@@ -95,26 +89,22 @@ func TestChanSink(t *testing.T) {
 				break
 			}
 
-			v_ := <-echoCh
+			v_ := <-ch
 			if v != v_ {
 				t.Errorf("expected value %#v, but got %#v", v, v_)
 			}
 
 		}
-		go func() {
-			_, closed := <-ch
-			if !closed {
-				echoCh <- nil
-			} else {
-				close(echoCh)
-			}
-		}()
 
 		cs.Close()
-		_, closed := <-echoCh
-		if !closed {
-			t.Error("expected closed channel, but read was successful")
+		_, ok := <-closeCh
+		if ok {
+			t.Error("expected closed close channel, but read was successful")
 		}
+		if !IsEOS(err) {
+			t.Errorf("expected end of stream error, but got %q", err)
+		}
+
 	}
 
 	cases := []testcase{
