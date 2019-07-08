@@ -5,9 +5,10 @@ import (
 	"sync"
 )
 
+// TODO should Observable Set and Value get a ctx?
+// TODO should Observable really be an interface? Why? Why not?
+
 // Observabe wraps an interface{} value and allows tracking changes to it
-// TODO should Set and Value get a ctx?
-// TODO should this really be an interface? Why? Why not?
 type Observable interface {
 	// Broadcast allows subscribing to changes
 	Broadcast
