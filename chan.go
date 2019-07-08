@@ -31,7 +31,7 @@ func NonBlocking() PipeOpt {
 	})
 }
 
-// NewPipe returns both ends of a tube
+// NewPipe returns both ends of a stream.
 func NewPipe(opts ...PipeOpt) (Source, Sink) {
 	var pOpts pipeOpts
 
@@ -70,6 +70,7 @@ type chanSource struct {
 	closeErr    *error
 }
 
+// Next implements the Source interface.
 func (src *chanSource) Next(ctx context.Context) (v interface{}, err error) {
 	if src.nonBlocking {
 		select {
@@ -128,6 +129,7 @@ type chanSink struct {
 	closeOnce   sync.Once
 }
 
+// Pour implements the Sink interface.
 func (sink *chanSink) Pour(ctx context.Context, v interface{}) error {
 	select {
 	case <-sink.closeCh:
@@ -173,6 +175,7 @@ func (sink *chanSink) Pour(ctx context.Context, v interface{}) error {
 
 }
 
+// Close implements the Sink interface.
 func (sink *chanSink) Close() error {
 	return sink.CloseWithError(EOS{})
 }

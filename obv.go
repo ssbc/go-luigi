@@ -56,6 +56,7 @@ func (o *observable) Value() (interface{}, error) {
 	return o.v, nil
 }
 
+// Register implements the Broadcast interface.
 func (o *observable) Register(sink Sink) func() {
 	o.Lock() // is released when goroutine finishes
 

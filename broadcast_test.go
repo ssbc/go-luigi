@@ -8,6 +8,35 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
+func ExampleBroadcast() {
+	sink, bcast := NewBroadcast()
+	defer sink.Close()
+
+	var printOutput FuncSink = func(
+		_ context.Context,
+		v interface{},
+		_ error,
+	) error {
+		if v == nil {
+			return nil
+		}
+		fmt.Println(*v.(*string))
+		return nil
+	}
+
+	closeSink := bcast.Register(printOutput)
+	defer closeSink()
+	closeSink = bcast.Register(printOutput)
+	defer closeSink()
+
+	msg := "I sink this should be printed twice"
+	_ = sink.Pour(context.Background(), &msg)
+
+	// Output:
+	// I sink this should be printed twice
+	// I sink this should be printed twice
+}
+
 type expectedEOSErr struct{ v interface{} }
 
 func (err expectedEOSErr) Error() string {
