@@ -6,8 +6,11 @@ import (
 	"go.cryptoscope.co/luigi"
 )
 
+// MapFunc is used to convert or 'map' values in streams.
 type MapFunc func(context.Context, interface{}) (interface{}, error)
 
+// SinkMap returns a Sink which writes converted values to its argument
+// according to a given MapFunc.
 func SinkMap(sink luigi.Sink, f MapFunc) luigi.Sink {
 	return &sinkMap{
 		Sink: sink,
@@ -21,6 +24,7 @@ type sinkMap struct {
 	f MapFunc
 }
 
+// Next implements the luigi.Sink interface.
 func (sink *sinkMap) Pour(ctx context.Context, v interface{}) error {
 	v, err := sink.f(ctx, v)
 	if err != nil {
@@ -30,6 +34,8 @@ func (sink *sinkMap) Pour(ctx context.Context, v interface{}) error {
 	return sink.Sink.Pour(ctx, v)
 }
 
+// SinkMap returns a new Source which produces converted values according to a
+// given MapFunc.
 func SourceMap(src luigi.Source, f MapFunc) luigi.Source {
 	return &srcMap{
 		Source: src,
@@ -43,6 +49,7 @@ type srcMap struct {
 	f MapFunc
 }
 
+// Next implements the luigi.Source interface.
 func (src *srcMap) Next(ctx context.Context) (interface{}, error) {
 	v, err := src.Source.Next(ctx)
 	if err != nil {

@@ -8,6 +8,28 @@ import (
 	"go.cryptoscope.co/luigi"
 )
 
+func ExampleReduceSink() {
+	// adder sums all numbers in the stream
+	adder := func(
+		_ context.Context,
+		acc, v interface{},
+	) (interface{}, error) {
+		if acc == nil {
+			acc = 0
+		}
+		sum := v.(int) + acc.(int)
+		return interface{}(sum), nil
+	}
+	reducer := NewReduceSink(adder)
+
+	numbers := luigi.SliceSource([]interface{}{0, 1, 2, 3, 4})
+	_ = luigi.Pump(context.Background(), reducer, &numbers)
+
+	total, _ := reducer.Value()
+	fmt.Println(total)
+	// Output: 10
+}
+
 type TypeError struct {
 	expected, got interface{}
 }

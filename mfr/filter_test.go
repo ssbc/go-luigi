@@ -8,6 +8,28 @@ import (
 	"go.cryptoscope.co/luigi"
 )
 
+func ExampleSourceFilter() {
+	isInt := func(
+		_ context.Context,
+		v interface{},
+	) (bool, error) {
+		_, ok := v.(int)
+		return ok, nil
+	}
+
+	numbers := luigi.SliceSource([]interface{}{0, "one", 2, "three", 4})
+	ints := SourceFilter(&numbers, isInt)
+
+	for {
+		v, err := ints.Next(context.Background())
+		if luigi.IsEOS(err) {
+			break
+		}
+		fmt.Print(v.(int))
+	}
+	// Output: 024
+}
+
 func TestFilterSink(t *testing.T) {
 	type testcase struct {
 		in, out    []interface{}

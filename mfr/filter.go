@@ -6,8 +6,11 @@ import (
 	"go.cryptoscope.co/luigi"
 )
 
-type FilterFunc func(context.Context, interface{}) (bool, error)
+// FilterFunc is used as a predicate to select values in a stream.
+type FilterFunc func(ctx context.Context, v interface{}) (bool, error)
 
+// SinkFilter returns a new Sink whose values are selected according to the
+// given FilterFunc.
 func SinkFilter(sink luigi.Sink, f FilterFunc) luigi.Sink {
 	return &sinkFilter{
 		Sink: sink,
@@ -21,6 +24,7 @@ type sinkFilter struct {
 	f FilterFunc
 }
 
+// Pour implements the luigi.Sink interface.
 func (sink *sinkFilter) Pour(ctx context.Context, v interface{}) error {
 	pass, err := sink.f(ctx, v)
 	if err == nil && pass {
@@ -30,6 +34,8 @@ func (sink *sinkFilter) Pour(ctx context.Context, v interface{}) error {
 	return err
 }
 
+// SinkFilter returns a new Source whose values are filtered according to the
+// given FilterFunc.
 func SourceFilter(src luigi.Source, f FilterFunc) luigi.Source {
 	return &srcFilter{
 		Source: src,
@@ -43,6 +49,7 @@ type srcFilter struct {
 	f FilterFunc
 }
 
+// Pour implements the luigi.Source interface.
 func (src *srcFilter) Next(ctx context.Context) (v interface{}, err error) {
 	var pass bool
 

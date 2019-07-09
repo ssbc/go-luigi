@@ -8,6 +8,27 @@ import (
 	"go.cryptoscope.co/luigi"
 )
 
+func ExampleSourceMap() {
+	toRune := func(
+		_ context.Context,
+		v interface{},
+	) (interface{}, error) {
+		return rune(v.(int) + 97), nil
+	}
+
+	numbers := luigi.SliceSource([]interface{}{0, 1, 2, 3, 4})
+	runes := SourceMap(&numbers, toRune)
+
+	for {
+		v, err := runes.Next(context.Background())
+		if luigi.IsEOS(err) {
+			break
+		}
+		fmt.Print(string(v.(rune)))
+	}
+	// Output: abcde
+}
+
 func TestMapSink(t *testing.T) {
 	type testcase struct {
 		in, out    []interface{}
