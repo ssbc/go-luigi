@@ -1,6 +1,9 @@
 package luigi
 
-import "context"
+import (
+	"context"
+	"errors"
+)
 
 type SliceSource []interface{}
 
@@ -14,11 +17,29 @@ func (src *SliceSource) Next(context.Context) (v interface{}, err error) {
 	return v, nil
 }
 
-type SliceSink []interface{}
+// SliceSink binds Sink methods to an interface array.
+type SliceSink struct {
+	slice  *[]interface{}
+	closed bool
+}
+
+// NewSliceSink returns a new SliceSink bound to the given interface array.
+func NewSliceSink(arg *[]interface{}) *SliceSink {
+	return &SliceSink{
+		slice:  arg,
+		closed: false,
+	}
+}
 
 func (sink *SliceSink) Pour(ctx context.Context, v interface{}) error {
-	*sink = append(*sink, v)
+	if sink.closed {
+		return errors.New("pour to closed sink")
+	}
+	*sink.slice = append(*sink.slice, v)
 	return nil
 }
 
-func (sink *SliceSink) Close() error { return nil }
+func (sink *SliceSink) Close() error {
+	sink.closed = true
+	return nil
+}
