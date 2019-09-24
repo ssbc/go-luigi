@@ -56,32 +56,14 @@ func (bcst *broadcastSink) Pour(ctx context.Context, v interface{}) error {
 	}
 	bcst.Unlock()
 
-	var (
-		wg    sync.WaitGroup
-		errCh = make(chan error, len(sinks))
-		merr  *multierror.Error
-	)
-
-	wg.Add(len(sinks))
-	for _, sink_ := range sinks {
-		go func(sink Sink) {
-			defer wg.Done()
-
-			err := sink.Pour(ctx, v)
-			if err != nil {
-				errCh <- err
-				return
-			}
-		}(sink_)
-	}
-	wg.Wait()
-	close(errCh)
-
-	for err := range errCh {
-		merr = multierror.Append(merr, err)
+	for _, s := range sinks {
+		err := s.Pour(ctx, v)
+		if err != nil {
+			return err
+		}
 	}
 
-	return merr.ErrorOrNil()
+	return nil
 }
 
 // Close implements the Sink interface.
