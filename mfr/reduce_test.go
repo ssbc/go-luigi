@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 package mfr // import "go.cryptoscope.co/luigi/mfr"
 
 import (

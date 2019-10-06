@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 package luigi // import "go.cryptoscope.co/luigi"
 
 import (
