@@ -46,19 +46,24 @@ func NewPipe(opts ...PipeOpt) (Source, Sink) {
 
 	ch := make(chan interface{}, pOpts.bufferSize)
 
-	var closeErr error
-
+	// TODO: it seems like at this point we could turn closeCh into a chan error
+	// and communitcate the closeErr to the other side instead of having a lock to protect the shared closeErr
 	closeCh := make(chan struct{})
+
+	var closeLock sync.Mutex
+	var closeErr error
 
 	return &chanSource{
 			ch:          ch,
 			closeCh:     closeCh,
+			closeLock:   &closeLock,
 			closeErr:    &closeErr,
 			nonBlocking: pOpts.nonBlocking,
 		}, &chanSink{
 			ch:          ch,
-			closeErr:    &closeErr,
 			closeCh:     closeCh,
+			closeLock:   &closeLock,
+			closeErr:    &closeErr,
 			nonBlocking: pOpts.nonBlocking,
 		}
 }
@@ -66,21 +71,25 @@ func NewPipe(opts ...PipeOpt) (Source, Sink) {
 type chanSource struct {
 	ch          <-chan interface{}
 	nonBlocking bool
+	closeLock   *sync.Mutex
 	closeCh     chan struct{}
 	closeErr    *error
 }
 
 // Next implements the Source interface.
 func (src *chanSource) Next(ctx context.Context) (v interface{}, err error) {
-	if src.nonBlocking {
+	if src.nonBlocking { // TODO: make two implementations of this (blocking and non-blocking) to untangle this mess
 		select {
 		case v = <-src.ch:
 		case <-src.closeCh:
 			select {
 			case v = <-src.ch:
 			default:
-				if *(src.closeErr) != nil {
-					err = *(src.closeErr)
+				src.closeLock.Lock()
+				cErr := *(src.closeErr)
+				src.closeLock.Unlock()
+				if cErr != nil {
+					err = cErr
 				} else {
 					err = EOS{}
 				}
@@ -95,8 +104,11 @@ func (src *chanSource) Next(ctx context.Context) (v interface{}, err error) {
 			select {
 			case v = <-src.ch:
 			default:
-				if *(src.closeErr) != nil {
-					err = *(src.closeErr)
+				src.closeLock.Lock()
+				cErr := *(src.closeErr)
+				src.closeLock.Unlock()
+				if cErr != nil {
+					err = cErr
 				} else {
 					err = EOS{}
 				}
@@ -106,8 +118,11 @@ func (src *chanSource) Next(ctx context.Context) (v interface{}, err error) {
 			// we consistently return the closing error
 			select {
 			case <-src.closeCh:
-				if *(src.closeErr) != nil {
-					err = *(src.closeErr)
+				src.closeLock.Lock()
+				cErr := *(src.closeErr)
+				src.closeLock.Unlock()
+				if cErr != nil {
+					err = cErr
 				} else {
 					err = EOS{}
 				}
@@ -123,7 +138,7 @@ func (src *chanSource) Next(ctx context.Context) (v interface{}, err error) {
 type chanSink struct {
 	ch          chan<- interface{}
 	nonBlocking bool
-	closeLock   sync.Mutex
+	closeLock   *sync.Mutex
 	closeCh     chan struct{}
 	closeErr    *error
 	closeOnce   sync.Once
@@ -179,6 +194,8 @@ func (sink *chanSink) Close() error {
 }
 
 func (sink *chanSink) CloseWithError(err error) error {
+	sink.closeLock.Lock()
+	defer sink.closeLock.Unlock()
 	sink.closeOnce.Do(func() {
 		*sink.closeErr = err
 		close(sink.closeCh)

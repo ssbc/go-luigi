@@ -64,3 +64,30 @@ func TestCloseWhilePour(t *testing.T) {
 		r.NoError(err)
 	}
 }
+
+func TestNextWhileCanceld(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.TODO())
+	r := require.New(t)
+
+	errc := make(chan error)
+
+	src, sink := NewPipe()
+
+	wait := make(chan struct{})
+	go func() {
+		close(wait)
+	}()
+
+	go func() {
+		<-wait
+		cancel()
+		errc <- sink.Close()
+	}()
+
+	<-wait
+	v, err := src.Next(ctx)
+	r.NotNil(err, "has to return an error")
+	r.Nil(v)
+
+	r.NoError(<-errc)
+}
