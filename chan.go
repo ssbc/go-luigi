@@ -133,11 +133,11 @@ type chanSink struct {
 func (sink *chanSink) Pour(ctx context.Context, v interface{}) error {
 	select {
 	case <-sink.closeCh:
-		// TODO export error
-		return errors.New("pour to closed sink")
+		return ErrPourToClosedSink
 	default:
 	}
 
+	// TODO: make two implementations of this (blocking and non-blocking) to untangle this mess
 	if sink.nonBlocking {
 		select {
 		case sink.ch <- v:
@@ -146,8 +146,7 @@ func (sink *chanSink) Pour(ctx context.Context, v interface{}) error {
 			// we may be called with closed context on a closed sink. in that case we want to return the closed sink error.
 			select {
 			case <-sink.closeCh:
-				// TODO export error
-				return errors.New("pour to closed sink")
+				return ErrPourToClosedSink
 			default:
 				return ctx.Err()
 			}
@@ -159,21 +158,20 @@ func (sink *chanSink) Pour(ctx context.Context, v interface{}) error {
 		case sink.ch <- v:
 			return nil
 		case <-sink.closeCh:
-			// TODO export error
-			return errors.New("pour to closed sink")
+			return ErrPourToClosedSink
 		case <-ctx.Done():
 			// we may be called with closed context on a closed sink. in that case we want to return the closed sink error.
 			select {
 			case <-sink.closeCh:
-				// TODO export error
-				return errors.New("pour to closed sink")
+				return ErrPourToClosedSink
 			default:
 				return ctx.Err()
 			}
 		}
 	}
-
 }
+
+var ErrPourToClosedSink = errors.New("pour to closed sink")
 
 // Close implements the Sink interface.
 func (sink *chanSink) Close() error {
