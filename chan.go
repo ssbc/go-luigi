@@ -196,10 +196,10 @@ func (sink *chanSink) Close() error {
 }
 
 func (sink *chanSink) CloseWithError(err error) error {
-	sink.closeLock.Lock()
-	defer sink.closeLock.Unlock()
 	sink.closeOnce.Do(func() {
+		sink.closeLock.Lock()
 		*sink.closeErr = err
+		sink.closeLock.Unlock()
 		close(sink.closeCh)
 	})
 	return nil
