@@ -4,6 +4,7 @@ package luigi // import "go.cryptoscope.co/luigi"
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -19,10 +20,12 @@ func TestChanSource(t *testing.T) {
 	test := func(tc testcase) {
 		ch := make(chan interface{})
 		closeCh := make(chan struct{})
+		var closeLock sync.Mutex
 		var err error
 		cs := &chanSource{
 			ch:          ch,
 			nonBlocking: false,
+			closeLock:   &closeLock,
 			closeErr:    &err,
 			closeCh:     closeCh,
 		}
@@ -81,7 +84,13 @@ func TestChanSink(t *testing.T) {
 		ch := make(chan interface{}, 1)
 		var err error
 		var closeCh = make(chan struct{})
-		cs := &chanSink{ch: ch, nonBlocking: false, closeErr: &err, closeCh: closeCh}
+		var closeLock sync.Mutex
+		cs := &chanSink{
+			ch:          ch,
+			nonBlocking: false,
+			closeLock:   &closeLock,
+			closeErr:    &err,
+			closeCh:     closeCh}
 
 		for _, v := range tc.values {
 			err := cs.Pour(context.TODO(), v)
