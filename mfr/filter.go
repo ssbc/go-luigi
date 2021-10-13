@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2021 The Luigi Authors
+//
 // SPDX-License-Identifier: MIT
 
 package mfr // import "go.cryptoscope.co/luigi/mfr"

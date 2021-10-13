@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2021 The Secretstream Authors
+//
+// SPDX-License-Identifier: Unlicense
+
 module go.cryptoscope.co/luigi
 
 require (
