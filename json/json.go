@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-package json // import "go.cryptoscope.co/luigi/json"
+package json // import "github.com/ssbc/go-luigi/json"
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"io"
 	"reflect"
 
-	"go.cryptoscope.co/luigi"
+	"github.com/ssbc/go-luigi"
 )
 
 type source struct {

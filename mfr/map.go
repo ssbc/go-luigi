@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: MIT
 
-package mfr // import "go.cryptoscope.co/luigi/mfr"
+package mfr // import "github.com/ssbc/go-luigi/mfr"
 
 import (
 	"context"
 
-	"go.cryptoscope.co/luigi"
+	"github.com/ssbc/go-luigi"
 )
 
 // MapFunc is used to convert or 'map' values in streams.
