@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: MIT
 
-package mfr // import "go.cryptoscope.co/luigi/mfr"
+package mfr // import "github.com/ssbc/go-luigi/mfr"
 
 import (
 	"context"
 	"fmt"
 	"testing"
 
-	"go.cryptoscope.co/luigi"
+	"github.com/ssbc/go-luigi"
 )
 
 func ExampleSourceFilter() {

@@ -7,7 +7,7 @@ package lexpvar
 import (
 	"expvar"
 
-	"go.cryptoscope.co/luigi"
+	"github.com/ssbc/go-luigi"
 )
 
 // Expvar returns an expvar.Var for the given observable.

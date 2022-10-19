@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-package json // import "go.cryptoscope.co/luigi/json"
+package json // import "github.com/ssbc/go-luigi/json"
 
 import (
 	"bytes"
@@ -12,7 +12,7 @@ import (
 	"reflect"
 	"testing"
 
-	"go.cryptoscope.co/luigi"
+	"github.com/ssbc/go-luigi"
 )
 
 func TestSource(t *testing.T) {

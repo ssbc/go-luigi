@@ -12,8 +12,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/ssbc/go-luigi"
 	"github.com/stretchr/testify/assert"
-	"go.cryptoscope.co/luigi"
 )
 
 var i int
